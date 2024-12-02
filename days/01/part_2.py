@@ -1,32 +1,31 @@
+import pdb
+from collections import Counter
+
 def read_lists(path: str) -> tuple[list, list]:
     left_list = []
     right_list = []
-
     with open(path, "r") as file:
         for line in file.readlines():
             left, right = line.split()
             left_list.append(int(left))
             right_list.append(int(right))
 
-    left_list.sort()
-    right_list.sort()
-
     return left_list, right_list
 
-def total_difference(left: list, right: list):
-    differences = [abs(l - r) for l, r in zip(left, right)]
-    total_difference = sum(differences)
+def compute_similarity_score(left: list, right: list):
+    right_counts = Counter(right)
+    similarity_score = sum(l * right_counts[l] for l in left)
 
-    print(f"The total distance is: {total_difference}!!")
+    print(f"The similarity score is: {similarity_score}!!")
 
 # test
 print(40*"-")
 print("test!")
 left, right = read_lists("./test_input.txt")
-total_difference(left, right)
+compute_similarity_score(left, right)
 
-# part 1
+# part 2
 print(40*"-")
-print("part 1!")
+print("Part 2!")
 left, right = read_lists("./input_1.txt")
-total_difference(left, right)
+compute_similarity_score(left, right)
