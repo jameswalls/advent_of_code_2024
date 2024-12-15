@@ -34,6 +34,7 @@ class Guard:
         }[direction]
         self.direction: Direction = mapped_direction
 
+        self.original_location = row, col
         self.original_direciton = direction
 
     def next_location(self):
@@ -93,6 +94,12 @@ class Grid:
         starting_location = self.guard.get_location()
         self.visited_locations[starting_location].append({"arrived": None, "left": None})
         self.path = [starting_location]
+        self.new_objects = []
+
+    def add_object_location(self, loc: tuple[int, int]):
+        if loc not in self.object_locations:
+            self.object_locations.add(loc)
+            self.new_objects.append(loc)
 
     def run(self): 
         while self.is_valid_location(next_location := self.guard.next_location()):
@@ -103,11 +110,30 @@ class Grid:
             self.visited_locations[self.guard.get_location()][-1]["left"] = current_direction
             self.guard.set_location(next_location)
             self.visited_locations[next_location].append({"arrived": current_direction})
-            self.path.append(next_location)
 
         self.visited_locations = dict(self.visited_locations)
 
+    def run_with_loop_detection(self) -> bool:
+        while self.is_valid_location(next_location := self.guard.next_location()):
+            if next_location in self.object_locations:
+                self.guard.turn_around()
+                continue
+            current_direction = self.guard.get_direction()
+            self.visited_locations[self.guard.get_location()][-1]["left"] = current_direction
+            self.guard.set_location(next_location)
+            visited_loc_directions = self.visited_locations[next_location]
+            for visited_loc_direction in visited_loc_directions:
+                if visited_loc_direction["arrived"] == current_direction:
+                    return True
+            else:
+                visited_loc_directions.append({"arrived": current_direction})
+
+        return False
+
     def iter_adjacent_locations(self, loc: tuple[int, int]):
+        # todo: take into account direction to yield locations.
+        #       if moving vertically, horizontal locations should not
+        #       be added.
         row, col = loc
         if (prev_row := row - 1 ) >= 0:
             yield prev_row, col
@@ -127,14 +153,18 @@ class Grid:
     def total_unique_visited_locations(self) -> int:
         return len(self.visited_locations.keys())
 
-    def draw_path(self):
+    def draw_path(self, path: str|None=None):
         output = [["." for _ in range(self.max_col+1)] for _ in range(self.max_row+1)]
         for row, col, char in self.visited_locations_chars():
             output[row][col] = char
         for row, col in self.object_locations:
-            output[row][col] = "#"
+            if (row, col) in self.new_objects:
+                output[row][col] = "O"
+            else:
+                output[row][col] = "#"
 
-        with open("./output.txt", "w") as file:
+        _path = path or "output.txt"
+        with open(_path, "w") as file:
             for line in output:
                 file.write("".join(line)+"\n")
 
@@ -178,22 +208,60 @@ class Grid:
 
         return current_char
 
+    def get_candidate_blocker_locations(self):
+        blockers = set()
+        for loc in self.visited_locations.keys():
+            row, col = loc
+            blockers.add(loc)
+
+            upper_row = loc[0] - 1
+            upper_loc = upper_row, col
+            if upper_row >= 0 and (upper_loc not in self.object_locations):
+                blockers.add(upper_loc)
+
+            lower_row = loc[0] + 1
+            lower_loc = lower_row, col
+            if lower_row <= self.max_row and (lower_loc not in self.object_locations):
+                blockers.add((upper_row, col))
+
+            left_col = loc[1] - 1
+            left_loc = row, left_col
+            if left_col >= 0 and (left_loc not in self.object_locations):
+                blockers.add(left_loc)
+
+            right_col = loc[1] - 1
+            right_loc = row, right_col
+            if left_col <= self.max_col and (right_loc not in self.object_locations):
+                blockers.add(left_loc)
+
+        blockers.remove(self.guard.original_location)
+
+        return blockers
+
 if __name__ == "__main__":
     grid = Grid("./example.txt")
     grid.run()
     print("test")
     print(f"Unique visited locations: {grid.total_unique_visited_locations()}")
-    """
-    to-do:
-        - run current path
-        - get all possible adjacent path objects.
-        - for each object: edit the grid and run again. if loop then add object to list.
-    """
-    pdb.set_trace()
-    grid.draw_path()
 
-    # grid = Grid("./part1.txt")
-    # grid.run()
-    # print("part1")
-    # print(f"Unique visited locations: {len(set(grid.visited_locations))}")
-    # grid.draw_path()
+    total_blocks = 0
+    for new_object_loc in grid.get_candidate_blocker_locations():
+        test_grid = Grid("./example.txt")
+        test_grid.add_object_location(new_object_loc)
+        if test_grid.run_with_loop_detection():
+            total_blocks += 1
+            test_grid.draw_path(str(new_object_loc))
+    print(f"total blocks: {total_blocks}")
+
+    grid = Grid("./part1.txt")
+    grid.run()
+    print("part 2")
+    print(f"Unique visited locations: {grid.total_unique_visited_locations()}")
+
+    total_blocks = 0
+    for new_object_loc in grid.get_candidate_blocker_locations():
+        test_grid = Grid("./part1.txt")
+        test_grid.add_object_location(new_object_loc)
+        if test_grid.run_with_loop_detection():
+            total_blocks += 1
+    print(f"total blocks: {total_blocks}")
