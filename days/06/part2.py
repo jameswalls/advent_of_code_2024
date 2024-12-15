@@ -107,22 +107,6 @@ class Grid:
 
         self.visited_locations = dict(self.visited_locations)
 
-    def find_loop_locations(self):
-        self.loop_locations = []
-        for loc in grid.path:
-            for adj_loc in self.iter_adjacent_locations(loc):
-                if adj_loc in self.object_locations:
-                    continue
-                next_location = self.simulate_path_with_new_object(adj_loc)  # simulate next location if object was placed at adj_loc
-
-                for visited_loc in self.visited_locations.get(next_location):
-                    # if arrived direction exists in visited_locations...
-                        self.loop_locations.append(adj_loc)
-
-                
-                pass
-    def simulate_path_with_new_object(self, loc[int, int]) -> 
-
     def iter_adjacent_locations(self, loc: tuple[int, int]):
         row, col = loc
         if (prev_row := row - 1 ) >= 0:
@@ -199,6 +183,12 @@ if __name__ == "__main__":
     grid.run()
     print("test")
     print(f"Unique visited locations: {grid.total_unique_visited_locations()}")
+    """
+    to-do:
+        - run current path
+        - get all possible adjacent path objects.
+        - for each object: edit the grid and run again. if loop then add object to list.
+    """
     pdb.set_trace()
     grid.draw_path()
 
