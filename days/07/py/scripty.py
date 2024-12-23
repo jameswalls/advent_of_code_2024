@@ -1,7 +1,5 @@
-import pdb
 from abc import ABC, abstractmethod
 from itertools import product
-from typing import Iterator, Callable
 
 with open("./part1.txt") as file:
     equations: list[tuple[int, list[int]]] = []
