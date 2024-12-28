@@ -17,8 +17,6 @@ struct Puzzle {
     scanned: bool,
     scanning_direction: ScanDirections,
     iter_idx: usize,
-    max_iter_row_idx: usize,
-    max_iter_col_idx: usize,
     row_counter: usize,
     col_counter: usize,
 }
@@ -29,8 +27,6 @@ impl Puzzle {
         let n_cols = puzzle[0].len();
         let scanned = true;
         let scanning_direction = ScanDirections::Horizontal;
-        let max_iter_row_idx = n_cols - window_size + 1;
-        let max_iter_col_idx = n_rows - window_size + 1;
         let iter_idx = 0;
         let row_counter = 0;
         let col_counter = 0;
@@ -44,32 +40,50 @@ impl Puzzle {
             scanned,
             scanning_direction,
             iter_idx,
-            max_iter_row_idx,
-            max_iter_col_idx,
             row_counter,
             col_counter,
         }
     }
 
     fn next_horizontal_slice(&mut self) -> Option<String> {
-        if self.iter_idx < self.max_iter_row_idx {
-            let range = self.iter_idx..self.iter_idx+self.window_size;
+        let end = self.iter_idx + self.window_size;
+        if end <= self.n_cols {
+            let range = self.iter_idx..end;
             let next_slice: String = self.puzzle[self.row_counter][range].iter().collect();
             self.iter_idx += 1;
-
             return Some(next_slice)
-        } else if self.row_counter < self.n_rows {
-            self.iter_idx = 0;
+        } else if self.row_counter < self.n_rows - 1 {
             self.row_counter += 1;
         }
         else {
             self.scanning_direction = ScanDirections::Vertical;
         }
+            self.iter_idx = 0;
             self.next()
     }
 
     fn next_vertical_slice(&mut self) -> Option<String> {
-        None
+        let end = self.iter_idx + self.window_size;
+        if end <= self.n_rows {
+            let range = self.iter_idx..end;
+            let next_slice: String = self.puzzle
+                .iter()
+                .map(|v| v[self.col_counter])
+                .collect::<Vec<char>>()
+                [range]
+                .iter()
+                .collect();
+            self.iter_idx += 1;
+
+            return Some(next_slice)
+        } else if self.col_counter < self.n_cols - 1 {
+            self.col_counter += 1;
+        }
+        else {
+            self.scanning_direction = ScanDirections::ForwardDiagonal;
+        }
+        self.iter_idx = 0;
+        self.next()
     }
 
     fn next_forward_diagonal_slice(&mut self) -> Option<String> {
